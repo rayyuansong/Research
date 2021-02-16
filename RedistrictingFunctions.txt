@@ -1,0 +1,105 @@
+Module RedistrictingFunctions
+=============================
+
+Functions
+---------
+
+
+`avEdges(g, dist)`
+:   Returns the average number of edges in a district for a specific plan
+
+
+`createGraph(s)`
+:   Creates a random connected graph of size s
+
+
+`dPlans(g, n, plan={}, plans=[], counter=0)`
+:   Takes in a graph g, and an int n, where n is the number of districts you want all your plans to have and returns all districting plans
+    n must be >= 2
+
+
+`distPlans(g, n)`
+:
+
+
+`distsInComm(plan1, plan2)`
+:   Takes in two districting plans (dictionaries) and returns a list of tuples of the districts in common
+
+
+`edgesBetween(graph, newGraph)`
+:   returns the total number of edges leaving a subgraph or specific district
+    Takes in 2 graphs
+
+
+`edgesInDists(g, dist)`
+:   g is original graph and dist is a specific districting plan
+    returns the total # of edges in a plan that are within districts
+
+
+`metagraphConnected(g, n)`
+:   Takes in a graph (g) and number of districts (n) and will return True
+    if the metagraph from the districting plans is connected
+
+
+`mostEdges(g, dist)`
+:   Takes in graph and returns the total number of edges in the 2 districts w/ most edged + edges between those 2 dists
+
+
+`multiplier(g, finalPlan)`
+:   Calculates how many different sequences exist that will get you from one plan to another
+    graph input will always be 2 districts and have all districts that were in common removed
+    finalPlan is a dictionary
+
+
+`numDifferentGroups(g, plans)`
+:   Returns the number of different probability groupings for a graph
+
+
+`probTransition(g, p1, p2)`
+:   probTransition takes in a graph (g) and two districting plans (dictionaries),
+    p1 and p2 from the same graph and returns the probability of transitioning
+    from p1 to p2 (number in between 0 and 1)
+
+
+`productleaving_edge_(g, dist)`
+:   returns the products of edges leaving districts in a plan
+
+
+`randomPlanar(x)`
+:   Will return a random planar nx graph with x nodes that was created using delaunay triangulation
+
+
+`spanning_tree(newGraph)`
+:   Takes in a graph and will return the number of spanning trees in the graph
+
+
+`spanning_trees_average(g, dist)`
+:   Returns the average number of spanning trees in a district for a specific plan
+
+
+`stationaryDist(g, n)`
+:   stationaryDist calculates the stationary distribution for ergodic graphs
+    inputs: g (graph), n (integer) or the number of districts in a plan
+
+
+`stationaryDistComplex(g, n)`
+:   takes in any graph, and gives a stationary distribution for districting plans
+    where all districting plans have n districts
+
+
+`stationaryDistNotErgodic(g, n)`
+:   Takes in a graph g and returns the stationary distribution of all the n-district plans from g
+
+
+`transitionMatrix(g, n)`
+:   transitionMatrix takes in a graph and returns a transition matrix
+    where each (i,j) entry is the probability of transitioning from the ith districting plan
+    to the jth districting plan and n is number of districts
+
+
+`variance(g, dist)`
+:   Returns the sum of differences between individual spanning trees and the average
+
+
+`varianceEdges(g, dist)`
+:   Returns the sum of differences between total edges in a district and the average

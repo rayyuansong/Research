@@ -1,0 +1,63 @@
+Module AnalysisFunctions
+========================
+
+Functions
+---------
+
+
+`avEdges(g, dist)`
+:   Takes in a graph and a districting plan and returns the average number of edges in a district
+
+
+`avSpanningTrees(g, dist)`
+:   Takes in a graph and districting plan and returns the average number of spanning trees in a district for a specific plan
+
+
+`createGraph(s)`
+:   Creates a random graph of size s
+
+
+`edgesBetween(graph, sGraph)`
+:   Takes in 2 graphs, where one is a subgraph of the other, and returns the total number of edges leaving the subgraph
+    The subgraph is the second argument for the function
+
+
+`edgesInDists(g, dist)`
+:   Takes in a graph and a specific districting plan and
+    returns the total # of edges in a plan that are within districts
+
+
+`mostEdges(g, dist)`
+:   Takes in graph and a districting plan, finds the two districts with the largest number of edges,
+    then returns the total number of edges in these districts and between them
+
+
+`numDifferentGroups(g, plans)`
+:   Takes in a graph and the list of all districting plans and returns the number of different probability groupings for a graph
+    (number of different total number of edges in districts)
+
+
+`productLeavingEdges(g, dist)`
+:   Takes in a graph and a districting plan and returns the products of edges leaving districts in a plan
+
+
+`randomPlanar(x)`
+:   Will return a random planar nx graph with x nodes that was created using delaunay triangulation
+
+
+`smdEdges(g, dist)`
+:   Takes in a graph and districting plan and returns the sum of differences between total edges in a district and the average
+    (finds standard mean deviation for number of edges in districts)
+
+
+`smdTrees(g, dist)`
+:   Takes in a graph and districting plan and returns the sum of differences between total spanning trees in a district and the average
+    (finds standard mean deviation for number of spanning trees in districts)
+
+
+`varianceEdges(g, dist)`
+:   Takes in a graph and districting plan and returns the variance of number of edges in districts
+
+
+`varianceSpanningTrees(g, dist)`
+:   Takes in a graph and districting plan and returns the variance of number of spanning trees in districts
