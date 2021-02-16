@@ -7,7 +7,7 @@ import matplotlib
 import math
 import collections
 import sys
-from RedistrictingFunctions.py import *
+from RedistrictingFunctions import *
 
 '''
 For many of the functions that take in a districting plan, we found it beneficial to loop through a list of all plans 
