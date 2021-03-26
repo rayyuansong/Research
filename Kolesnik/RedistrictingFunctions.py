@@ -1,3 +1,4 @@
+import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np 
 import numpy.linalg as npla 
@@ -16,22 +17,154 @@ import collections
 import sys
 import itertools
 from numpy.polynomial.polynomial import polyfit
-import graphviz
-import networkx as nx
-from gerrychain import Graph
 
-#Authored by: Emma Kolesnik
-#Code for determining stationary distributions for graphs with n districting plans and calculating the total variation distance and mixing time for a graph
+def mostEdges(g, dist):
+  '''
+  Takes in graph and returns the total number of edges in the 2 districts w/ most edged + edges between those 2 dists
+  '''
+  #create list of districts
+  nodes = []
+  r = max(dist.values()) + 1
+  for i in range(r):
+    dist1 = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        dist1.append(j)
+    nodes.append(dist1)
+  
+  #find largest district
+  maximum = 0
+  for n in nodes:
+    subgraph = g.subgraph(n)
+    num = len(subgraph.edges())
+    if num > maximum:
+      maximum = num
+      largestDist = n
 
-def total_variation_distance(array1, array2):
+  #find 2nd largest district
+  nodes.remove(largestDist)
+  maximum = 0
+  for n in nodes:
+    subgraph = g.subgraph(n)
+    if len(subgraph.edges()) > maximum:
+      maximim = len(subgraph.edges())
+      largestDist2 = n
+
+  largest = largestDist + largestDist2
+  twoCombined = g.subgraph(largest)
+  return len(twoCombined.edges())
+
+def edgesBetween(graph, newGraph):
   """
-  takes in the stationary distributuon (array1) and a step of Recomb (array 2) and returns the TVD
+  returns the total number of edges leaving a subgraph or specific district
+  Takes in 2 graphs
+  """
+  y = []
+  for i in range(len(graph.nodes())):
+    if i not in newGraph.nodes():
+      y.append(i)
+  x = graph.subgraph(y)
+  total = len(graph.edges())
+  group1 = len(newGraph.edges())
+  group2 = len(x.edges())
+  return total - group1 - group2
+
+def avEdges(g, dist):
+  """
+  Returns the average number of edges in a district for a specific plan
   """
   sum = 0
-  for i in range(len(array2)):
-    sum = sum + abs(array1[0][i]-array2[i])
-  return sum/2
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    sum += edgesBetween(g,y)
+  return sum/(max(dist.values()) + 1)
 
+def productleaving_edge_(g,dist):
+  '''
+  returns the products of edges leaving districts in a plan
+  '''
+  product = 1
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    product *= edgesBetween(g,y)
+  return product 
+
+def varianceEdges(g, dist):
+  """
+  Returns the sum of differences between total edges in a district and the average
+  """
+  average = avEdges(g, dist)
+  var = 0
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    var += abs(edgesBetween(g, y) - average)
+  return var
+
+def spanning_trees_average(g, dist):
+  """
+  Returns the average number of spanning trees in a district for a specific plan
+  """
+  sum = 0
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    sum += spanning_tree(y)
+  return sum/(max(dist.values()) + 1)
+
+def variance(g, dist):
+  """
+  Returns the sum of differences between individual spanning trees and the average
+  """
+  average = spanning_trees_average(g, dist)
+  var = 0
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    var += abs(spanning_tree(y) - average)
+  return var
+
+def numDifferentGroups(g, plans):
+  """
+  Returns the number of different probability groupings for a graph
+  """
+  numbers = []
+  for p in plans:
+    numbers.append(edgesInDists(g, p))
+  #set will ensure all entires are distinct
+  return len(set(numbers))
+
+def edgesInDists(g, dist):
+  '''
+  g is original graph and dist is a specific districting plan
+  returns the total # of edges in a plan that are within districts 
+  '''
+  sum = 0
+  for i in range(max(dist.values()) + 1):
+    nodes = []
+    for j in dist.keys():
+      if dist.get(j) == i:
+        nodes.append(j)
+    y = g.subgraph(nodes)
+    sum += len(y.edges())
+  return sum
 
 def randomPlanar(x):
   """
@@ -71,18 +204,82 @@ def randomPlanar(x):
   sortedGraph.add_edges_from(graph.edges())
   return sortedGraph
 
+def createGraph(s):
+  """
+  Creates a random connected graph of size s
+  """
+  g = nx.Graph()
+
+  #create graph of size s
+  for i in range(s):
+    g.add_node(i)
+
+  #add edge between 2 nodes with some probability,
+  #though if this probability is too low, doesn't make a graph
+  for i in range(s):
+    for j in range(i+1,s):
+      x = random.randint(0,50)
+      if x >= 25:
+        g.add_edge(i,j)
+
+  return g
+
+
+def stationaryDistComplex(g, n):
+  """
+  takes in any graph, and gives a stationary distribution for districting plans
+  where all districting plans have n districts
+  """
+  if metagraphConnected(g, n):
+    return stationaryDist(g, n)
+  else:
+    stationaryDistNotErgodic(g,n)
+
+def metagraphConnected(g, n):
+  """
+  Takes in a graph (g) and number of districts (n) and will return True 
+  if the metagraph from the districting plans is connected
+  """
+  #meta will be the metagraph
+  meta = nx.Graph()
+  numPlans = len(distPlans(g, n))
+
+  #add nodes
+  for r in range(numPlans):
+    meta.add_node(r)
+
+  l = distPlans(g, n)
+
+  #add in edges
+  for i in range(numPlans):
+    for j in range(numPlans):
+      if probTransition(g, l[i], l[j]) != 0 and l[i] != l[j]:
+        meta.add_edge(i,j)
+
+  # to draw metagraph:
+  # plt.figure()
+  # nx.draw(meta)
+  # plt.show()
+
+  #check if graph is connected 
+  return nx.is_connected(meta)
 
 def stationaryDist(g, n):
   """ stationaryDist calculates the stationary distribution for ergodic graphs
       inputs: g (graph), n (integer) or the number of districts in a plan
   """
+  
+  #create transition matrix for graph
   matrix = transitionMatrix(g, n)
   numPlans = len(distPlans(g, n))
+  #go through and subtract 1 from all diagonal entries in the matrix
   for i in range(numPlans):
     matrix[i][i] = matrix[i][i] -1
 
   P = np.array(matrix)
   np.set_printoptions(threshold=sys.maxsize)
+  
+  #make the last column all 1s so that each row sums to 1 
   for i in range(numPlans):
     P[i][numPlans-1] = 1
   #to find stationary distribution:
@@ -91,36 +288,69 @@ def stationaryDist(g, n):
   X1 = X.T 
   Y = np.linalg.solve(P.T, X1) 
   PI = Y.T 
-  return PI 
+  print(numPlans) 
+  print('# probability groupings: ', numDifferentGroups(g, distPlans(g, n))) 
+  print('solution to version 1, pi:')
+  print(PI) 
+#   x = PI.tolist()
+#   y = []
+  distplan = distPlans(g, n)
 
-def squared_steps(g, n, x):
-  """
-  Takes in a graph g and number of districts; each step x squares the transition matrix
-  """
-  matrix = transitionMatrix(g, n)
+  # #Drawing grid graphs 
+  for i in range(numPlans):
+    print("plan", i)
+    print("prob = ", (PI[0][i]))
+    print("plan= ", distplan[i])
+    # # avEdges(g, distplan[i])
+    # y.append(mostEdges(g, distplan[i]))
+    plt.figure() 
+    pos = {0:(0,0),1:(1,-0.25),2:(2,0),3:(3,-0.25),4:(0.25,1),5:(1,0.75),6:(2.25,1),7:(3.25,0.75),8:(0,2),9:(1,1.75),10:(2,2),11:(3,2)}
+    nx.draw(g, pos=pos,node_color = [distplan[i][x] for x in g.nodes()], with_labels = True, node_size = 1000, font_size = 20 )
+    plt.show()
 
-  for i in range(x):
-    temp = np.dot(matrix, matrix)
-    matrix = temp
-
-  P = np.array(matrix)
-  return P 
+  # # plt.ylim(0,5)
   
+  # plt.xlim(0.01,0.0105)
+  # plt.xlabel("Probability")
+  # plt.ylabel("Variance of Leaving Edges")
 
-def single_steps(g, n, x):
+#   print(y)
+#   x1 = np.array(x[0])
+#   y1 = np.array(y)
+
+#   # print('x=', len(x1))
+#   # print('y=', len(y1))
+#   plt.plot(x1, y1, 'o')
+#   m,b = np.polyfit(x1, y1, 1)
+#   plt.plot(x1, (m*x1) + b)
+#   plt.show()
+
+def stationaryDistNotErgodic(g, n):
   """
   Takes in a graph g and returns the stationary distribution of all the n-district plans from g
   """
   matrix = transitionMatrix(g, n)
-  matrix1 = copy.deepcopy(matrix)
+  numPlans = len(distPlans(g, n))
 
   #to find stationary distribution (P^100); change range to get different P^x
-  for i in range(x):
-    temp = np.dot(matrix, matrix1)
+  for i in range(20):
+    temp = np.dot(matrix,matrix)
     matrix = temp
 
   P = np.array(matrix)
-  return P 
+  print(P[0])
+  print(numPlans)
+  print('Matrix:')
+  print(P) 
+
+  distplan = distPlans(g, n)
+  #Drawing grid graphs 
+  for i in range(numPlans):
+    print ("plan", i)
+    print("prob = ", (P[i][i]))
+    plt.figure() 
+    nx.draw(g, node_color = [distplan[i][x] for x in g.nodes()], with_labels = True, node_size = 1000, font_size = 20 )
+    plt.show()
 
 def transitionMatrix(g, n):
   """ transitionMatrix takes in a graph and returns a transition matrix 
@@ -333,38 +563,15 @@ def dPlans(g, n, plan = {}, plans = [], counter = 0):
     
     return plans
 
-def pos(g):
-  """ pos takes in a graph and returns dictionary
-      of positions for nodes
-  """
 
 
 
-# #### example code for creating/analyzing a large sample of random graphs
-# for i in range(100):
-#   graph = randomPlanar(9)
-#   stat = stationaryDist(graph, 4)
-#   allVariation = []
-#   con = False
-#   iter = 0
-#   while(con == False):
-#     p = single_steps(graph, 4, iter)
-#     distance = []
-#     for j in range(len(p)):
-#       distance.append(total_variation_distance(stat,p[j]))
-#     allVariation.append(distance)
-#     if(max(distance) <= .25):
-#       con = True
-#     iter += 1
-#   print(allVariation)
+ 
 
-### code for finding creating state graphs 
-# graph_path_county = "texas.json"
-# texasgraph = Graph.from_json(graph_path_county)
 
-#create a new county graph with way less data attached
-#the jsons have so much data attached to nodes it may slow things way down
-#or take up way too much space
-# texas_graph = nx.Graph()
-# for e in texasgraph.edges():
-#     texas_graph.add_edge(e[0],e[1])
+
+
+
+
+
+ 
